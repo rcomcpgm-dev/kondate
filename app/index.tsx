@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +14,7 @@ import { useMealStore } from '../src/stores/mealStore';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { usePreferencesStore } from '../src/stores/preferencesStore';
 import { useHistoryStore } from '../src/stores/historyStore';
+import { getItem } from '../src/lib/storage';
 import {
   MEAL_TIMES,
   GENRES,
@@ -21,6 +23,8 @@ import {
   SERVINGS_OPTIONS,
 } from '../src/constants/options';
 import type { MealTime, Genre, Mood, CookingTime, Servings, GentleOption } from '../src/types';
+
+const VISITED_KEY = 'kondate-visited';
 
 const GENTLE_OPTIONS: { id: GentleOption; label: string; emoji: string; desc: string }[] = [
   { id: 'easyDigest', label: '消化にやさしい', emoji: '🍵', desc: '風邪・胃腸' },
@@ -76,6 +80,21 @@ function UpsellModal({
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [ftueChecked, setFtueChecked] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    getItem<boolean>(VISITED_KEY).then((visited) => {
+      if (!mounted) return;
+      if (!visited) {
+        router.replace('/lp');
+      } else {
+        setFtueChecked(true);
+      }
+    });
+    return () => { mounted = false; };
+  }, [router]);
+
   const [showUpsell, setShowUpsell] = useState(false);
   const {
     selection,
@@ -125,6 +144,14 @@ export default function HomeScreen() {
   // For the progress bar
   const remainingRatio = premium ? 1 : remaining / dailyLimit;
   const isLow = !premium && remaining <= Math.ceil(dailyLimit * 0.3);
+
+  if (!ftueChecked) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B35" />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -501,6 +528,12 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#FFF8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFF8F0',

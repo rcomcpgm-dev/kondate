@@ -8,6 +8,12 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { setItem } from '../src/lib/storage';
+import { useMealStore } from '../src/stores/mealStore';
+import { useSubscriptionStore } from '../src/stores/subscriptionStore';
+
+const VISITED_KEY = 'kondate-visited';
 
 function useWebSEO() {
   useEffect(() => {
@@ -57,10 +63,25 @@ const FEATURES = [
 
 export default function LandingPage() {
   const router = useRouter();
+  const { generate } = useMealStore();
+  const { canUseGacha, incrementGacha } = useSubscriptionStore();
   useWebSEO();
 
-  const handleCTA = () => {
+  const handleCTA = async () => {
+    await setItem(VISITED_KEY, true);
     router.replace('/');
+  };
+
+  const handleInstantGacha = async () => {
+    await setItem(VISITED_KEY, true);
+    if (!canUseGacha()) {
+      router.replace('/');
+      return;
+    }
+    incrementGacha();
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    generate();
+    router.replace('/result');
   };
 
   return (
@@ -84,6 +105,13 @@ export default function LandingPage() {
           activeOpacity={0.8}
         >
           <Text style={styles.ctaButtonText}>🎰 無料でガチャを回す</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.instantGachaButton}
+          onPress={handleInstantGacha}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.instantGachaButtonText}>🎲 条件なしで即ガチャ</Text>
         </TouchableOpacity>
       </View>
 
@@ -219,6 +247,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  instantGachaButton: {
+    marginTop: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FF6B35',
+    width: '100%',
+    maxWidth: 340,
+  },
+  instantGachaButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FF6B35',
     letterSpacing: 1,
   },
 

@@ -26,7 +26,7 @@ function getRateLimitInfo(ip: string): { allowed: boolean; remaining: number } {
 }
 
 // ---------------------------------------------------------------------------
-// Gacha limit: 10 requests on the first day an IP is seen, then 3/day.
+// Gacha limit: 10 requests on the first day an IP is seen, then 5/day.
 // Tracked separately from the hard rate limit above.
 // TODO: When Stripe is integrated, premium users will pass a session token
 //       (e.g. via Authorization header) to bypass the gacha limit entirely.
@@ -40,7 +40,7 @@ interface GachaEntry {
 const gachaMap = new Map<string, GachaEntry>();
 
 const GACHA_FIRST_DAY_LIMIT = 10;
-const GACHA_DAILY_LIMIT = 3;
+const GACHA_DAILY_LIMIT = 5;
 
 function getGachaLimitInfo(ip: string): { allowed: boolean; remaining: number; limit: number } {
   const now = Date.now();

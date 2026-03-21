@@ -45,7 +45,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         );
         if (daysSinceFirst <= 0) return 10;  // Day 1: 10 tries
         if (daysSinceFirst <= 2) return 5;   // Day 2-3: 5 tries
-        return 3;                             // Day 4+: 3 tries
+        return 5;                             // Day 4+: 5 tries
       },
 
       getRemaining: () => {
