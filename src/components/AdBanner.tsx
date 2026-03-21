@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 
 interface AdBannerProps {
@@ -7,55 +7,41 @@ interface AdBannerProps {
 }
 
 function WebAdBanner({ adId, size }: { adId: string; size: 'banner' | 'rectangle' }) {
-  const ref = useRef<View>(null);
-  const [mounted, setMounted] = useState(false);
-  const height = size === 'banner' ? 60 : 250;
+  const width = size === 'banner' ? 320 : 300;
+  const height = size === 'banner' ? 50 : 250;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // iframe内でscriptを実行することでdocument.writeに対応
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body{margin:0;padding:0;display:flex;align-items:center;justify-content:center;min-height:${height}px;overflow:hidden;}
+</style></head><body>
+<script src="https://adm.shinobi.jp/s/${adId}"></script>
+</body></html>`;
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    // React Native Web の View は実際には div 要素
-    // ref.current から実 DOM ノードを取得
-    const node = ref.current as unknown as HTMLElement | null;
-    if (!node) return;
-
-    // 広告用のコンテナを作成
-    const adContainer = document.createElement('div');
-    adContainer.id = `admax-${adId}`;
-    adContainer.style.width = '100%';
-    adContainer.style.minHeight = `${height}px`;
-    adContainer.style.display = 'flex';
-    adContainer.style.alignItems = 'center';
-    adContainer.style.justifyContent = 'center';
-
-    const script = document.createElement('script');
-    script.src = `https://adm.shinobi.jp/s/${adId}`;
-    script.async = true;
-
-    node.appendChild(adContainer);
-    adContainer.appendChild(script);
-
-    return () => {
-      if (node.contains(adContainer)) {
-        node.removeChild(adContainer);
-      }
-    };
-  }, [mounted, adId, height]);
+  const srcDoc = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 
   return (
-    <View
-      ref={ref}
-      style={[styles.container, { minHeight: height }]}
-    />
+    <View style={[styles.container, { minHeight: height }]}>
+      <iframe
+        src={srcDoc}
+        width={width}
+        height={height}
+        style={{
+          border: 'none',
+          overflow: 'hidden',
+          display: 'block',
+          margin: '0 auto',
+        }}
+        scrolling="no"
+        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+        title="ad"
+      />
+    </View>
   );
 }
 
 export function AdBanner({ adId, size = 'banner' }: AdBannerProps) {
-  const height = size === 'banner' ? 60 : 250;
+  const height = size === 'banner' ? 50 : 250;
 
   if (Platform.OS === 'web' && adId) {
     return <WebAdBanner adId={adId} size={size} />;
@@ -72,7 +58,6 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 24,
     alignItems: 'center',
-    borderRadius: 12,
   },
   placeholder: {
     marginTop: 24,
