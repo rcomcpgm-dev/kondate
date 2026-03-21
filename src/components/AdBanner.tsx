@@ -1,54 +1,66 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 
 interface AdBannerProps {
-  /** 忍者AdMax 広告枠ID（取得後に設定） */
   adId?: string;
-  /** 広告サイズ */
   size?: 'banner' | 'rectangle';
 }
 
-/**
- * 広告バナーコンポーネント
- * - adId未設定時はプレースホルダー表示
- * - Web: 忍者AdMax scriptを動的挿入
- * - Native: プレースホルダーのみ（将来的にAdMob等）
- */
-export function AdBanner({ adId, size = 'banner' }: AdBannerProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const isBanner = size === 'banner';
-  const height = isBanner ? 60 : 250;
+function WebAdBanner({ adId, size }: { adId: string; size: 'banner' | 'rectangle' }) {
+  const ref = useRef<View>(null);
+  const [mounted, setMounted] = useState(false);
+  const height = size === 'banner' ? 60 : 250;
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || !adId) return;
+    setMounted(true);
+  }, []);
 
-    // 忍者AdMax: scriptタグを動的に挿入
-    const container = containerRef.current;
-    if (!container) return;
+  useEffect(() => {
+    if (!mounted) return;
 
-    container.innerHTML = '';
+    // React Native Web の View は実際には div 要素
+    // ref.current から実 DOM ノードを取得
+    const node = ref.current as unknown as HTMLElement | null;
+    if (!node) return;
+
+    // 広告用のコンテナを作成
+    const adContainer = document.createElement('div');
+    adContainer.id = `admax-${adId}`;
+    adContainer.style.width = '100%';
+    adContainer.style.minHeight = `${height}px`;
+    adContainer.style.display = 'flex';
+    adContainer.style.alignItems = 'center';
+    adContainer.style.justifyContent = 'center';
+
     const script = document.createElement('script');
     script.src = `https://adm.shinobi.jp/s/${adId}`;
     script.async = true;
-    container.appendChild(script);
+
+    node.appendChild(adContainer);
+    adContainer.appendChild(script);
 
     return () => {
-      if (container) container.innerHTML = '';
+      if (node.contains(adContainer)) {
+        node.removeChild(adContainer);
+      }
     };
-  }, [adId]);
+  }, [mounted, adId, height]);
+
+  return (
+    <View
+      ref={ref}
+      style={[styles.container, { minHeight: height }]}
+    />
+  );
+}
+
+export function AdBanner({ adId, size = 'banner' }: AdBannerProps) {
+  const height = size === 'banner' ? 60 : 250;
 
   if (Platform.OS === 'web' && adId) {
-    return (
-      <View style={[styles.container, { minHeight: height }]}>
-        <div
-          ref={containerRef as React.RefObject<HTMLDivElement>}
-          style={{ width: '100%', minHeight: height, textAlign: 'center' }}
-        />
-      </View>
-    );
+    return <WebAdBanner adId={adId} size={size} />;
   }
 
-  // プレースホルダー（adId未設定時）
   return (
     <View style={[styles.placeholder, { height }]}>
       <Text style={styles.placeholderText}>- 広告 -</Text>
@@ -60,7 +72,6 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 24,
     alignItems: 'center',
-    overflow: 'hidden',
     borderRadius: 12,
   },
   placeholder: {
