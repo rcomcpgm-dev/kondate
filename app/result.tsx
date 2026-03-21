@@ -25,6 +25,7 @@ import Animated, {
 import { useMealStore } from '../src/stores/mealStore';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { useHistoryStore } from '../src/stores/historyStore';
+import { AdBanner } from '../src/components/AdBanner';
 import { RARITY_CONFIG, rarityStars } from '../src/constants/rarity';
 import type { Rarity } from '../src/types';
 
@@ -622,9 +623,7 @@ export default function ResultScreen() {
       </View>
 
       {!isPremium && (
-        <View style={styles.adBanner}>
-          <Text style={styles.adText}>- 広告 -</Text>
-        </View>
+        <AdBanner size="rectangle" adId="885eddc4d4ad85e4695a6ab1e5320460" />
       )}
 
       <View style={styles.bottomSpacer} />
@@ -944,20 +943,6 @@ const styles = StyleSheet.create({
   },
   shareOtherBtnText: {
     fontSize: 18,
-  },
-  // Ad
-  adBanner: {
-    marginTop: 24,
-    paddingVertical: 40,
-    backgroundColor: '#F5F0E8',
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0D8CC',
-  },
-  adText: {
-    fontSize: 14,
-    color: '#B0A090',
   },
   // Error
   errorContainer: {

@@ -11,7 +11,9 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useMealStore } from '../../src/stores/mealStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 import { usePreferencesStore } from '../../src/stores/preferencesStore';
+import { AdBanner } from '../../src/components/AdBanner';
 import { RARITY_CONFIG, rarityStars } from '../../src/constants/rarity';
 import { getSubstitutions } from '../../src/constants/substitutions';
 import type { Recipe } from '../../src/types';
@@ -20,6 +22,7 @@ export default function RecipeDetailScreen() {
   const { type } = useLocalSearchParams<{ type: string }>();
   const router = useRouter();
   const result = useMealStore((s) => s.result);
+  const isPremium = useSubscriptionStore((s) => s.isPremium());
   const { isDisliked, addDisliked, removeDisliked } = usePreferencesStore();
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
   const [substitutions, setSubstitutions] = useState<Record<number, string>>({});
@@ -403,6 +406,10 @@ export default function RecipeDetailScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {!isPremium && (
+        <AdBanner size="banner" adId="fe0b86fd1de3479945b6b0f25cd90d9d" />
+      )}
 
       <View style={styles.bottomSpacer} />
     </ScrollView>
