@@ -161,6 +161,35 @@ export default function SettingsScreen() {
         </View>
       )}
 
+      {/* Shopping List */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🛒 買い物</Text>
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push('/shopping')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.shoppingLink}>🛒 買い物リスト</Text>
+          <Text style={styles.shoppingHint}>直近の決定した献立の材料を確認できます</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Collection */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🏆 コレクション</Text>
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/collection');
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.collectionLink}>🏆 コレクション図鑑</Text>
+          <Text style={styles.collectionHint}>お気に入りに追加したレシピを図鑑で確認</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
@@ -314,6 +343,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#E53935',
+  },
+  shoppingLink: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF6B35',
+    marginBottom: 4,
+  },
+  shoppingHint: {
+    fontSize: 13,
+    color: '#8B7355',
+  },
+  collectionLink: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF6B35',
+    marginBottom: 4,
+  },
+  collectionHint: {
+    fontSize: 13,
+    color: '#8B7355',
   },
   bottomSpacer: {
     height: 40,

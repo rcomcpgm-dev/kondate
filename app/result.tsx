@@ -553,12 +553,21 @@ export default function ResultScreen() {
             <Text style={styles.decideButtonText}>✅ これに決めた！</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.decidedBanner}>
-            <Text style={styles.decidedText}>🎊 決定しました！</Text>
-            {!isPremium && (
-              <Text style={styles.decidedHint}>IQOS代おごると履歴を記録できます 🚬</Text>
-            )}
-          </View>
+          <>
+            <View style={styles.decidedBanner}>
+              <Text style={styles.decidedText}>🎊 決定しました！</Text>
+              {!isPremium && (
+                <Text style={styles.decidedHint}>IQOS代おごると履歴を記録できます 🚬</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.shoppingListButton}
+              onPress={() => router.push('/shopping')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.shoppingListButtonText}>🛒 買い物リストを見る</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <TouchableOpacity
@@ -872,6 +881,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#81C784',
     marginTop: 4,
+  },
+  shoppingListButton: {
+    paddingVertical: 16,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FF6B35',
+  },
+  shoppingListButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FF6B35',
   },
   retryGachaButton: {
     paddingVertical: 18,

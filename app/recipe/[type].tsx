@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { useMealStore } from '../../src/stores/mealStore';
 import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 import { usePreferencesStore } from '../../src/stores/preferencesStore';
+import { useFavoritesStore } from '../../src/stores/favoritesStore';
 import { AdBanner } from '../../src/components/AdBanner';
 import { RARITY_CONFIG, rarityStars } from '../../src/constants/rarity';
 import { getSubstitutions } from '../../src/constants/substitutions';
@@ -24,8 +25,10 @@ export default function RecipeDetailScreen() {
   const result = useMealStore((s) => s.result);
   const isPremium = useSubscriptionStore((s) => s.isPremium());
   const { isDisliked, addDisliked, removeDisliked } = usePreferencesStore();
+  const { addFavorite, removeFavorite, isFavorite } = useFavoritesStore();
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
   const [substitutions, setSubstitutions] = useState<Record<number, string>>({});
+  const [toastVisible, setToastVisible] = useState(false);
 
   if (!result || !type) {
     return (
@@ -141,6 +144,20 @@ export default function RecipeDetailScreen() {
     }
   };
 
+  const mealType = type as 'main' | 'side' | 'soup';
+  const favorited = isFavorite(recipe.name);
+
+  const handleToggleFavorite = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (favorited) {
+      removeFavorite(recipe.name);
+    } else {
+      addFavorite(recipe, mealType);
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 1800);
+    }
+  };
+
   const totalNutrition = recipe.nutrition;
 
   // Calculate total meal nutrition if all three recipes have nutrition data
@@ -181,12 +198,27 @@ export default function RecipeDetailScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
-        <Text style={styles.backButtonText}>← 戻る</Text>
-      </TouchableOpacity>
+      <View style={styles.topRow}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButtonText}>← 戻る</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={handleToggleFavorite}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.favoriteButtonText}>{favorited ? '♥' : '♡'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {toastVisible && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>お気に入りに追加しました</Text>
+        </View>
+      )}
 
       <View style={styles.header}>
         <View style={styles.labelRow}>
@@ -447,14 +479,49 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  backButton: {
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
+  },
+  backButton: {
     alignSelf: 'flex-start',
   },
   backButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FF6B35',
+  },
+  favoriteButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  favoriteButtonText: {
+    fontSize: 24,
+    color: '#FF6B35',
+  },
+  toast: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    backgroundColor: '#2D1B00',
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  toastText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   header: {
     marginBottom: 20,
