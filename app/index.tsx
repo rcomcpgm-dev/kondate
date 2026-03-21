@@ -23,6 +23,7 @@ import {
   SERVINGS_OPTIONS,
 } from '../src/constants/options';
 import type { MealTime, Genre, Mood, CookingTime, Servings, GentleOption } from '../src/types';
+import { getCurrentSeason } from '../src/constants/seasonal';
 
 const VISITED_KEY = 'kondate-visited';
 
@@ -60,6 +61,7 @@ function UpsellModal({
             <Text style={styles.modalFeature}>✅ 広告なし</Text>
             <Text style={styles.modalFeature}>✅ 献立履歴＆繰り返し防止</Text>
             <Text style={styles.modalFeature}>✅ 栄養成分表示</Text>
+            <Text style={styles.modalFeature}>✅ 週間献立モード</Text>
           </View>
           <TouchableOpacity
             style={styles.modalPurchaseBtn}
@@ -122,6 +124,17 @@ export default function HomeScreen() {
   const premium = isPremium();
   const remaining = getRemaining();
   const dailyLimit = getDailyLimit();
+  const seasonalData = getCurrentSeason();
+
+  const handleWeekly = () => {
+    if (premium) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push('/weekly');
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setShowUpsell(true);
+    }
+  };
 
   const handleGacha = async () => {
     if (!canUseGacha()) {
@@ -325,6 +338,15 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {/* Seasonal Banner */}
+        {seasonalData && (
+          <View style={styles.seasonalBanner}>
+            <Text style={styles.seasonalText}>
+              🌸 今月の旬: {seasonalData.ingredients.slice(0, 5).join('・')}
+            </Text>
+          </View>
+        )}
+
         {/* Meal Time */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🕐 いつのごはん？</Text>
@@ -513,6 +535,26 @@ export default function HomeScreen() {
               ? '本日分を使い切りました'
               : '献立ガチャを回す！'}
           </Text>
+        </TouchableOpacity>
+
+        {/* Weekly Meal Plan Button */}
+        <TouchableOpacity
+          style={styles.weeklyButton}
+          onPress={handleWeekly}
+          activeOpacity={0.8}
+        >
+          <View style={styles.weeklyButtonContent}>
+            <Text style={styles.weeklyButtonEmoji}>📅</Text>
+            <View style={styles.weeklyButtonTextContainer}>
+              <Text style={styles.weeklyButtonText}>週間献立モード</Text>
+              <Text style={styles.weeklyButtonDesc}>1週間分まとめて生成</Text>
+            </View>
+            {!premium && (
+              <View style={styles.weeklyPremiumBadge}>
+                <Text style={styles.weeklyPremiumBadgeText}>Premium</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
 
         <View style={styles.bottomSpacer} />
@@ -799,6 +841,22 @@ const styles = StyleSheet.create({
   gentleChipDescActive: {
     color: '#FF9800',
   },
+  // Seasonal banner
+  seasonalBanner: {
+    marginBottom: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+    alignItems: 'center',
+  },
+  seasonalText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8B7355',
+  },
   // Sections
   section: {
     marginBottom: 28,
@@ -965,6 +1023,56 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1,
+  },
+  // Weekly button
+  weeklyButton: {
+    marginTop: 12,
+    marginBottom: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#FFD54F',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  weeklyButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  weeklyButtonEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  weeklyButtonTextContainer: {
+    flex: 1,
+  },
+  weeklyButtonText: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#2D1B00',
+  },
+  weeklyButtonDesc: {
+    fontSize: 12,
+    color: '#8B7355',
+    marginTop: 2,
+  },
+  weeklyPremiumBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: '#FFF8E1',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FFD54F',
+  },
+  weeklyPremiumBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#F9A825',
   },
   bottomSpacer: {
     height: 40,

@@ -1,4 +1,5 @@
-import type { MealSelection, MealPlan, DecidedMeal } from '../types';
+import type { MealSelection, MealPlan, DecidedMeal, WeeklyMealPlan } from '../types';
+import { getCurrentSeason } from '../constants/seasonal';
 
 const MEAL_TIME_LABELS: Record<string, string> = {
   breakfast: '朝食',
@@ -97,6 +98,12 @@ function buildUserPrompt(
     }
   }
 
+  // Seasonal ingredients hint
+  const season = getCurrentSeason();
+  if (season) {
+    prompt += `\n\n【今月の旬食材】できれば以下の旬食材を使ってください：${season.ingredients.join('、')}`;
+  }
+
   if (dislikedIngredients.length > 0) {
     prompt += `\n\n【NG食材】以下の食材は絶対に使わないでください：\n${dislikedIngredients.map((n) => `- ${n}`).join('\n')}`;
   }
@@ -172,4 +179,124 @@ export async function generateWithAI(
   }
 
   return parseMealPlanResponse(textBlock.text);
+}
+
+function buildWeeklySystemPrompt(): string {
+  return `あなたは日本の家庭料理の専門家です。
+1週間分（7日間）の献立を提案してください。各日に主菜・副菜・汁物の3品を含めてください。
+
+**重要なルール：**
+- 7日間で主菜が重複しないようにしてください
+- 副菜・汁物もできるだけバラエティ豊かにしてください
+- 和食・洋食・中華などジャンルを日ごとに変化させてください
+- 栄養バランスを考慮してください
+
+各レシピには以下の情報を**必ず**含めてください：
+- name: 料理名
+- description: 簡単な説明（1文）
+- ingredients: 材料リスト（{ name: string, amount: string }の配列）
+- steps: 手順（文字列の配列）
+- cookingTimeMinutes: 調理時間（分、数値）
+- calories: おおよそのカロリー（数値）
+- nutrition: 栄養成分（{ calories: number, protein: number, fat: number, carbs: number, fiber: number, salt: number }）
+  - calories: kcal, protein/fat/carbs/fiber: g, salt: g
+- rarity: レア度（"N"=定番家庭料理, "R"=ちょっと手の込んだ料理, "SR"=レストラン級, "SSR"=プロ級・映え料理）
+
+**必ず**以下のJSON形式のみで返答してください。説明文やmarkdownは不要です：
+[
+  { "main": { ... }, "side": { ... }, "soup": { ... } },
+  { "main": { ... }, "side": { ... }, "soup": { ... } },
+  ...（7日分）
+]`;
+}
+
+function parseWeeklyResponse(text: string): MealPlan[] {
+  let cleaned = text.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  }
+
+  const parsed = JSON.parse(cleaned);
+  if (!Array.isArray(parsed) || parsed.length !== 7) {
+    throw new Error('Expected array of 7 meal plans');
+  }
+
+  const validRarities = ['N', 'R', 'SR', 'SSR'];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return parsed.map((day: any, i: number) => {
+    for (const key of ['main', 'side', 'soup'] as const) {
+      const recipe = day[key];
+      if (!recipe?.name || !recipe?.ingredients || !recipe?.steps) {
+        throw new Error(`Invalid recipe data for day ${i + 1} ${key}`);
+      }
+      if (!recipe.rarity || !validRarities.includes(recipe.rarity)) {
+        recipe.rarity = 'R';
+      }
+    }
+    return {
+      main: day.main,
+      side: day.side,
+      soup: day.soup,
+      generatedAt: new Date().toISOString(),
+    } as MealPlan;
+  });
+}
+
+export async function generateWeeklyWithAI(
+  dislikedIngredients: string[],
+  recentMeals: DecidedMeal[],
+): Promise<WeeklyMealPlan> {
+  let userPrompt = '1週間分の献立を考えてください。';
+
+  if (dislikedIngredients.length > 0) {
+    userPrompt += `\n\n【NG食材】以下の食材は絶対に使わないでください：\n${dislikedIngredients.map((n) => `- ${n}`).join('\n')}`;
+  }
+
+  if (recentMeals.length > 0) {
+    const recentNames = recentMeals.map((d) => {
+      const date = new Date(d.decidedAt).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+      return `- ${d.mealPlan.main.name}（${date}）`;
+    });
+    userPrompt += `\n\n【最近作った料理】同じものは避けてください：\n${recentNames.join('\n')}`;
+  }
+
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      system: buildWeeklySystemPrompt(),
+      messages: [
+        { role: 'user', content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`API error ${response.status}: ${err}`);
+  }
+
+  const data = await response.json();
+  const textBlock = data.content?.find((b: { type: string }) => b.type === 'text');
+  if (!textBlock?.text) {
+    throw new Error('No text response from AI');
+  }
+
+  const plans = parseWeeklyResponse(textBlock.text);
+
+  const today = new Date();
+  const days = plans.map((plan, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    return { date: date.toISOString().slice(0, 10), plan };
+  });
+
+  return {
+    days,
+    generatedAt: new Date().toISOString(),
+  };
 }

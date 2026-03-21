@@ -1,6 +1,7 @@
-import type { MealSelection, MealPlan, Recipe, Genre, Mood, Rarity, Difficulty, GentleOption } from '../types';
+import type { MealSelection, MealPlan, Recipe, Genre, Mood, Rarity, Difficulty, GentleOption, WeeklyMealPlan } from '../types';
 import { rollRarity } from '../constants/rarity';
 import { DIET_CALORIE_TARGET } from '../constants/options';
+import { getCurrentSeason } from '../constants/seasonal';
 
 // High-purine ingredients to avoid for gout
 const HIGH_PURINE_INGREDIENTS = [
@@ -1252,6 +1253,19 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/** Prefer recipes containing seasonal ingredients (50% chance to boost if any match) */
+function boostSeasonal<T extends { ingredients: { name: string }[] }>(arr: T[]): T[] {
+  const season = getCurrentSeason();
+  if (!season) return arr;
+  const seasonalNames = season.ingredients;
+  const seasonal = arr.filter((r) =>
+    r.ingredients.some((ing) => seasonalNames.some((s) => ing.name.includes(s))),
+  );
+  // If we found seasonal matches, prefer them with 50% probability; otherwise fall back to full pool
+  if (seasonal.length > 0 && Math.random() < 0.5) return seasonal;
+  return arr;
+}
+
 function pickByRarity<T extends { rarity: Rarity }>(arr: T[], targetRarity: Rarity): T {
   const matched = arr.filter((r) => r.rarity === targetRarity);
   if (matched.length > 0) return pickRandom(matched);
@@ -1376,6 +1390,9 @@ export async function generateMealPlan(
     mainPool = filterByGentleOptions(mainPool, selection.gentleOptions, true);
   }
 
+  // Boost recipes with seasonal ingredients
+  mainPool = boostSeasonal(mainPool);
+
   const mainRecipe = pickByRarity(mainPool, mainRarity);
   const main = stripMeta(mainRecipe);
 
@@ -1410,6 +1427,49 @@ export async function generateMealPlan(
     main: adjustServings(main),
     side: adjustServings(side),
     soup: adjustServings(soup),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+export async function generateWeeklyMealPlan(
+  dislikedIngredients: string[] = [],
+): Promise<WeeklyMealPlan> {
+  // Simulate API latency
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+
+  const mainPool = filterByDisliked(MAIN_RECIPES, dislikedIngredients);
+  const sidePool = filterByDisliked(SIDE_RECIPES, dislikedIngredients);
+  const soupPool = filterByDisliked(SOUP_RECIPES, dislikedIngredients);
+
+  // Shuffle and pick 7 non-repeating mains
+  const shuffledMains = [...mainPool].sort(() => Math.random() - 0.5);
+  const shuffledSides = [...sidePool].sort(() => Math.random() - 0.5);
+  const shuffledSoups = [...soupPool].sort(() => Math.random() - 0.5);
+
+  const today = new Date();
+  const days: { date: string; plan: MealPlan }[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+
+    const mainRecipe = shuffledMains[i % shuffledMains.length];
+    const sideRecipe = shuffledSides[i % shuffledSides.length];
+    const soupRecipe = shuffledSoups[i % shuffledSoups.length];
+
+    days.push({
+      date: date.toISOString().slice(0, 10),
+      plan: {
+        main: stripMeta(mainRecipe),
+        side: sideRecipe,
+        soup: soupRecipe,
+        generatedAt: new Date().toISOString(),
+      },
+    });
+  }
+
+  return {
+    days,
     generatedAt: new Date().toISOString(),
   };
 }

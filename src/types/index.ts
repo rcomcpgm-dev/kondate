@@ -73,3 +73,8 @@ export interface DecidedMeal {
   mealPlan: MealPlan;
   decidedAt: string;
 }
+
+export interface WeeklyMealPlan {
+  days: { date: string; plan: MealPlan }[];
+  generatedAt: string;
+}
