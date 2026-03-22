@@ -237,9 +237,6 @@ function DotAnimation({ delay }: { delay: number }) {
   return <Animated.View style={[styles.dot, style]} />;
 }
 
-function ResultRarityBadge({ rarity }: { rarity: Rarity }) {
-  return <RarityBadge rarity={rarity} size="large" />;
-}
 
 interface RecipeCardProps {
   emoji: string;
@@ -448,17 +445,24 @@ export default function ResultScreen() {
         <Text style={styles.backButtonText}>← 戻る</Text>
       </TouchableOpacity>
 
-      {/* Header with rarity */}
-      <Animated.View style={[styles.resultHeader, headerStyle]}>
-        <ResultRarityBadge rarity={mainRarity} />
+      {/* Header with integrated rarity */}
+      <Animated.View style={[
+        styles.resultHeader,
+        headerStyle,
+        {
+          backgroundColor: mainRarity === 'SSR' ? '#FFF8E1' : mainRarity === 'SR' ? '#F3E5F5' : mainRarity === 'R' ? '#E3F2FD' : '#FFFFFF',
+          borderColor: mainRarity === 'SSR' ? '#FFD700' : mainRarity === 'SR' ? '#CE93D8' : mainRarity === 'R' ? '#64B5F6' : '#F0E6D8',
+          borderWidth: mainRarity === 'SSR' || mainRarity === 'SR' ? 2 : 1,
+        },
+      ]}>
         <Text style={styles.resultEmoji}>
-          {mainRarity === 'SSR' ? '🌈✨🌈' : mainRarity === 'SR' ? '✨🏆✨' : '🎉'}
+          {mainRarity === 'SSR' ? '🌈✨🌈' : mainRarity === 'SR' ? '✨🏆✨' : mainRarity === 'R' ? '✨' : '🎉'}
         </Text>
         <Text style={[
           styles.resultTitle,
-          { color: mainConfig.color },
-          mainRarity === 'SSR' && { fontSize: 32, letterSpacing: 3 },
-          mainRarity === 'SR' && { fontSize: 30 },
+          mainRarity === 'SSR' && { color: '#E65100' },
+          mainRarity === 'SR' && { color: '#7B1FA2' },
+          mainRarity === 'R' && { color: '#1565C0' },
         ]}>
           {mainRarity === 'SSR'
             ? '超激レア献立！！'
@@ -468,21 +472,21 @@ export default function ResultScreen() {
             ? 'レア献立！'
             : '今日の献立'}
         </Text>
-        {mainRarity === 'SSR' && (
-          <Text style={styles.ssrSubtext}>
-            {rarityStars(mainRarity)} 確率7%の大当たり！ {rarityStars(mainRarity)}
-          </Text>
-        )}
-        {mainRarity === 'SR' && (
-          <Text style={styles.srSubtext}>
-            {rarityStars(mainRarity)} レストラン級の特別献立！
-          </Text>
-        )}
-        <Text style={styles.resultSubtitle}>
+        <View style={styles.resultRarityRow}>
+          <RarityBadge rarity={mainRarity} size="medium" />
+        </View>
+        <Text style={[
+          styles.resultSubtitle,
+          mainRarity === 'SSR' && { color: '#BF360C' },
+          mainRarity === 'SR' && { color: '#6A1B9A' },
+          mainRarity === 'R' && { color: '#0D47A1' },
+        ]}>
           {mainRarity === 'SSR'
-            ? 'おめでとう！プロ級の特別メニューが出ました！'
+            ? 'おめでとう！確率7%の大当たり！'
             : mainRarity === 'SR'
-            ? '当たり！少し特別な献立です！'
+            ? 'レストラン級の特別献立です！'
+            : mainRarity === 'R'
+            ? '少し特別な献立が出ました！'
             : 'あなたにぴったりの献立が決まりました！'}
         </Text>
       </Animated.View>
@@ -681,32 +685,33 @@ const styles = StyleSheet.create({
   resultHeader: {
     alignItems: 'center',
     marginBottom: 28,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   resultEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
+    fontSize: 36,
+    marginBottom: 6,
   },
   resultTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#2D1B00',
+    textAlign: 'center',
   },
-  ssrSubtext: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#E040FB',
-    marginTop: 4,
-    letterSpacing: 1,
-  },
-  srSubtext: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#F9A825',
-    marginTop: 4,
+  resultRarityRow: {
+    marginTop: 10,
+    marginBottom: 8,
   },
   resultSubtitle: {
     fontSize: 14,
     color: '#8B7355',
-    marginTop: 4,
+    textAlign: 'center',
   },
   // (RarityBadge styles now in src/components/RarityBadge.tsx)
   ssrStars: {
