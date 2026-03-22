@@ -41,10 +41,14 @@ function UpsellModal({
   visible,
   onClose,
   onPurchase,
+  onWatchAd,
+  canWatchAd,
 }: {
   visible: boolean;
   onClose: () => void;
   onPurchase: () => void;
+  onWatchAd: () => void;
+  canWatchAd: boolean;
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -52,6 +56,26 @@ function UpsellModal({
         <View style={styles.modalCard}>
           <Text style={styles.modalEmoji}>🎰</Text>
           <Text style={styles.modalTitle}>今日のガチャを使い切りました</Text>
+
+          {/* Reward ad option */}
+          {canWatchAd && (
+            <TouchableOpacity
+              style={styles.modalRewardBtn}
+              onPress={onWatchAd}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.modalRewardText}>🎬 広告を見てガチャ+1回</Text>
+              <Text style={styles.modalRewardSub}>無料・あと数回使えます</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Divider */}
+          <View style={styles.modalDivider}>
+            <View style={styles.modalDividerLine} />
+            <Text style={styles.modalDividerText}>または</Text>
+            <View style={styles.modalDividerLine} />
+          </View>
+
           <Text style={styles.modalDesc}>
             開発者にIQOS代をおごると{'\n'}
             全機能が解放されます☕
@@ -631,6 +655,11 @@ export default function HomeScreen() {
         visible={showUpsell}
         onClose={() => setShowUpsell(false)}
         onPurchase={handleUpsellPurchase}
+        onWatchAd={() => {
+          setShowUpsell(false);
+          setShowRewardAd(true);
+        }}
+        canWatchAd={canWatchRewardAd()}
       />
       <RewardAdModal
         visible={showRewardAd}
@@ -1322,5 +1351,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#B0A090',
+  },
+  modalRewardBtn: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 20,
+    backgroundColor: '#1976D2',
+    alignItems: 'center',
+    marginTop: 16,
+    shadowColor: '#1976D2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  modalRewardText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  modalRewardSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  modalDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: 16,
+  },
+  modalDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0D8CC',
+  },
+  modalDividerText: {
+    fontSize: 12,
+    color: '#B0A090',
+    marginHorizontal: 12,
   },
 });
