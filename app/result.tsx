@@ -277,7 +277,7 @@ function RecipeCard({ emoji, label, recipeName, cookingTime, calories, rarity, t
         index * 200 + 400,
         withRepeat(
           withSequence(
-            withTiming(1.02, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+            withTiming(1.01, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
             withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
           ),
           -1,
@@ -314,11 +314,11 @@ function RecipeCard({ emoji, label, recipeName, cookingTime, calories, rarity, t
           styles.recipeCard,
           { borderColor: config.borderColor },
           isHighRarity && {
-            borderWidth: 2.5,
+            borderWidth: 2,
             shadowColor: config.glowColor,
-            shadowOpacity: rarity === 'SSR' ? 0.5 : 0.3,
-            shadowRadius: rarity === 'SSR' ? 20 : 14,
-            elevation: rarity === 'SSR' ? 10 : 6,
+            shadowOpacity: rarity === 'SSR' ? 0.3 : 0.2,
+            shadowRadius: rarity === 'SSR' ? 8 : 6,
+            elevation: rarity === 'SSR' ? 4 : 3,
           },
           rarity === 'SSR' && { backgroundColor: '#FFF8F5' },
         ]}
