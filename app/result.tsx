@@ -393,13 +393,12 @@ export default function ResultScreen() {
     transform: [{ scale: headerScale.value }],
   }));
 
-  const { canUseGacha, incrementGacha } = useSubscriptionStore();
+  const { canUseGacha, incrementGacha, getRemaining } = useSubscriptionStore();
+  const remaining = getRemaining();
+  const canRetry = canUseGacha();
 
   const handleRetry = async () => {
-    if (!canUseGacha()) {
-      router.replace('/');
-      return;
-    }
+    if (!canRetry) return;
     incrementGacha();
     setShowResult(false);
     setDecided(false);
@@ -554,11 +553,17 @@ export default function ResultScreen() {
         )}
 
         <TouchableOpacity
-          style={styles.retryGachaButton}
+          style={[styles.retryGachaButton, !canRetry && styles.retryGachaButtonDisabled]}
           onPress={handleRetry}
           activeOpacity={0.8}
+          disabled={!canRetry}
         >
-          <Text style={styles.retryGachaText}>🎰 もう一回回す</Text>
+          <Text style={[styles.retryGachaText, !canRetry && styles.retryGachaTextDisabled]}>
+            {canRetry ? '🎰 同じ条件でもう1回' : '本日のガチャ回数を使い切りました'}
+          </Text>
+          {canRetry && remaining !== Infinity && (
+            <Text style={styles.retryRemainingText}>残り{remaining}回</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -859,6 +864,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  retryGachaButtonDisabled: {
+    backgroundColor: '#D4C5B5',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  retryGachaTextDisabled: {
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  retryRemainingText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 4,
   },
   // Share
   shareSection: {

@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /settings
+Disallow: /checkout-success
 Disallow: /api/
 
 Sitemap: https://kondate-nu.vercel.app/sitemap.xml

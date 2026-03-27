@@ -19,8 +19,8 @@ function useWebSEO() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const TITLE = '献立ガチャ｜3秒で今日の晩ごはんが決まる無料アプリ';
-    const DESC = '毎日の「何作ろう…」をガチャで解決。気分とジャンルを選んでガチャを回すだけで、主菜・副菜・汁物の献立が3秒で決まります。無料・登録不要。';
+    const TITLE = '献立ガチャ｜今日の献立をガチャで決めよう';
+    const DESC = '今日の献立に迷ったら、ガチャを回すだけ。メイン・副菜・汁物の3品をAIがランダム提案。レアリティ付きで楽しく献立が決まる無料アプリ。';
     const URL = 'https://kondate-nu.vercel.app/lp';
     const IMAGE = 'https://kondate-nu.vercel.app/og-image.png';
 
