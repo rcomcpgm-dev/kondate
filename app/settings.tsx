@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -16,19 +17,48 @@ import { useHistoryStore } from '../src/stores/historyStore';
 export default function SettingsScreen() {
   const router = useRouter();
   const { dislikedIngredients, removeDisliked } = usePreferencesStore();
-  const { tier, isPremium, purchase, restore, expiresAt } = useSubscriptionStore();
+  const { tier, isPremium, purchase, restore, openPortal, expiresAt, customerId } = useSubscriptionStore();
   const { clearHistory, decidedMeals } = useHistoryStore();
   const premium = isPremium();
+  const [loading, setLoading] = useState(false);
 
   const handlePurchase = async () => {
-    await purchase();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('ありがとう！🚬', 'IQOS代ありがとう！全機能を解放しました！');
+    setLoading(true);
+    try {
+      await purchase();
+      // On web, page navigates away to Stripe Checkout
+    } catch (err) {
+      Alert.alert('エラー', err instanceof Error ? err.message : '購入処理に失敗しました');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRestore = async () => {
-    await restore();
-    Alert.alert('復元完了', '購入情報を復元しました。');
+    setLoading(true);
+    try {
+      await restore();
+      const refreshed = useSubscriptionStore.getState().isPremium();
+      Alert.alert(
+        refreshed ? '復元完了' : '購入が見つかりません',
+        refreshed ? 'プレミアムプランを復元しました。' : 'アクティブなサブスクリプションが見つかりませんでした。',
+      );
+    } catch {
+      Alert.alert('エラー', '復元に失敗しました。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setLoading(true);
+    try {
+      await openPortal();
+    } catch (err) {
+      Alert.alert('エラー', err instanceof Error ? err.message : 'ポータルを開けませんでした');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClearHistory = () => {
@@ -52,8 +82,8 @@ export default function SettingsScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>← 戻る</Text>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/')}>
+        <Text style={styles.backButtonText}>← トップへ</Text>
       </TouchableOpacity>
 
       <Text style={styles.pageTitle}>⚙️ 設定</Text>
@@ -65,18 +95,32 @@ export default function SettingsScreen() {
           {premium ? (
             <>
               <View style={styles.planBadge}>
-                <Text style={styles.planBadgeText}>🚬 IQOS感謝プラン</Text>
+                <Text style={styles.planBadgeText}>IQOS感謝プラン</Text>
               </View>
               <Text style={styles.planDetail}>
                 有効期限: {expiresAt ? new Date(expiresAt).toLocaleDateString('ja-JP') : '-'}
               </Text>
               <Text style={styles.planFeatures}>
-                ✅ ガチャ無制限{'\n'}
-                ✅ AI献立生成{'\n'}
-                ✅ 広告なし{'\n'}
-                ✅ 履歴記録 & AI回避{'\n'}
-                ✅ 栄養成分表示
+                ガチャ無制限{'\n'}
+                AI献立生成{'\n'}
+                広告なし{'\n'}
+                履歴記録 & AI回避{'\n'}
+                栄養成分表示
               </Text>
+              {customerId && (
+                <TouchableOpacity
+                  style={styles.manageButton}
+                  onPress={handleManageSubscription}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#FF6B35" />
+                  ) : (
+                    <Text style={styles.manageButtonText}>サブスクリプション管理</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </>
           ) : (
             <>
@@ -84,28 +128,14 @@ export default function SettingsScreen() {
                 <Text style={[styles.planBadgeText, styles.planBadgeTextFree]}>無料プラン</Text>
               </View>
               <Text style={styles.planFeatures}>
-                ✅ 1日3回ガチャ{'\n'}
-                ✅ NG食材設定{'\n'}
-                ❌ AI献立生成{'\n'}
-                ❌ 広告あり{'\n'}
-                ❌ 履歴記録
+                1日5回ガチャ{'\n'}
+                NG食材設定{'\n'}
+                広告あり
               </Text>
-              <TouchableOpacity
-                style={styles.purchaseButton}
-                onPress={handlePurchase}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.purchaseButtonText}>
-                  開発者にIQOS代をおごる 🚬
-                </Text>
-                <Text style={styles.purchasePrice}>¥480 / 月</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.restoreButton}
-                onPress={handleRestore}
-              >
-                <Text style={styles.restoreButtonText}>購入を復元</Text>
-              </TouchableOpacity>
+              <View style={styles.comingSoonButton}>
+                <Text style={styles.comingSoonText}>プレミアムプラン準備中</Text>
+                <Text style={styles.comingSoonSub}>まもなく利用可能になります</Text>
+              </View>
             </>
           )}
         </View>
@@ -363,6 +393,35 @@ const styles = StyleSheet.create({
   collectionHint: {
     fontSize: 13,
     color: '#8B7355',
+  },
+  comingSoonButton: {
+    paddingVertical: 16,
+    borderRadius: 20,
+    backgroundColor: '#F0E6D8',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  comingSoonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#8B7355',
+  },
+  comingSoonSub: {
+    fontSize: 12,
+    color: '#B0A090',
+    marginTop: 2,
+  },
+  manageButton: {
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: '#FFF0E8',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  manageButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FF6B35',
   },
   bottomSpacer: {
     height: 40,

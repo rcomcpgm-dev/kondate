@@ -1,11 +1,19 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform, Linking } from 'react-native';
 import type { SubscriptionTier } from '../types';
+import {
+  createCheckoutSession,
+  getSubscriptionStatus,
+  createPortalSession,
+} from '../lib/subscriptionApi';
 
 interface SubscriptionState {
   tier: SubscriptionTier;
   expiresAt: string | null;
+  token: string | null;
+  customerId: string | null;
   dailyGachaCount: number;
   lastGachaDate: string | null;
   firstUseDate: string | null;
@@ -21,6 +29,9 @@ interface SubscriptionState {
   addRewardBonus: () => void;
   purchase: () => Promise<void>;
   restore: () => Promise<void>;
+  openPortal: () => Promise<void>;
+  activateFromCheckout: (token: string, expiresAt: string, customerId: string) => void;
+  refreshStatus: () => Promise<void>;
   checkStatus: () => void;
 }
 
@@ -29,6 +40,8 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     (set, get) => ({
       tier: 'free',
       expiresAt: null,
+      token: null,
+      customerId: null,
       dailyGachaCount: 0,
       lastGachaDate: null,
       firstUseDate: null,
@@ -103,24 +116,67 @@ export const useSubscriptionStore = create<SubscriptionState>()(
         }
       },
 
-      // TODO: Implement real IAP with expo-in-app-purchases
       purchase: async () => {
-        const expires = new Date();
-        expires.setDate(expires.getDate() + 30);
-        set({
-          tier: 'premium',
-          expiresAt: expires.toISOString(),
-        });
+        if (Platform.OS === 'web') {
+          const { url } = await createCheckoutSession();
+          window.location.href = url;
+        } else {
+          // Mobile: open checkout URL in browser
+          const { url } = await createCheckoutSession();
+          await Linking.openURL(url);
+        }
       },
 
       restore: async () => {
-        // TODO: Implement real restore from App Store
+        const { customerId } = get();
+        if (!customerId) return;
+        await get().refreshStatus();
+      },
+
+      openPortal: async () => {
+        const { customerId } = get();
+        if (!customerId) return;
+        const { url } = await createPortalSession(customerId);
+        if (Platform.OS === 'web') {
+          window.location.href = url;
+        } else {
+          await Linking.openURL(url);
+        }
+      },
+
+      activateFromCheckout: (token: string, expiresAt: string, customerId: string) => {
+        set({
+          tier: 'premium',
+          token,
+          expiresAt,
+          customerId,
+        });
+      },
+
+      refreshStatus: async () => {
+        const { customerId } = get();
+        if (!customerId) return;
+        try {
+          const status = await getSubscriptionStatus({ customerId });
+          if (status.tier === 'premium' && status.token) {
+            set({
+              tier: 'premium',
+              token: status.token,
+              expiresAt: status.expiresAt || null,
+            });
+          } else {
+            set({ tier: 'free', token: null, expiresAt: null });
+          }
+        } catch {
+          // Silently fail — keep existing state
+        }
       },
 
       checkStatus: () => {
         const { tier, expiresAt } = get();
         if (tier === 'premium' && expiresAt && new Date(expiresAt) <= new Date()) {
-          set({ tier: 'free', expiresAt: null });
+          // Token expired — try refreshing from Stripe
+          get().refreshStatus();
         }
       },
     }),

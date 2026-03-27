@@ -1,5 +1,15 @@
 import type { MealSelection, MealPlan, DecidedMeal, WeeklyMealPlan } from '../types';
 import { getCurrentSeason } from '../constants/seasonal';
+import { useSubscriptionStore } from '../stores/subscriptionStore';
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = useSubscriptionStore.getState().token;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 const MEAL_TIME_LABELS: Record<string, string> = {
   breakfast: '朝食',
@@ -158,9 +168,7 @@ export async function generateWithAI(
 ): Promise<MealPlan> {
   const response = await fetch('/api/generate', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
@@ -266,9 +274,7 @@ export async function generateWeeklyWithAI(
 
   const response = await fetch('/api/generate', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8000,

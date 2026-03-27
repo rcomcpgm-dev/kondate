@@ -70,6 +70,19 @@ function getGachaLimitInfo(ip: string): { allowed: boolean; remaining: number; l
   return { allowed: true, remaining: dailyLimit - entry.count, limit: dailyLimit };
 }
 
+async function isPremiumRequest(req: VercelRequest): Promise<boolean> {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return false;
+  const token = auth.slice(7);
+  try {
+    const { verifySubscriptionToken } = await import('./lib/jwt.js');
+    const payload = await verifySubscriptionToken(token);
+    return payload !== null;
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
@@ -87,7 +100,7 @@ export default async function handler(
     req.socket.remoteAddress ||
     'unknown';
 
-  // Hard rate limit (abuse prevention)
+  // Hard rate limit (abuse prevention) — applies to everyone
   const { allowed, remaining } = getRateLimitInfo(ip);
   res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT));
   res.setHeader('X-RateLimit-Remaining', String(remaining));
@@ -97,23 +110,35 @@ export default async function handler(
     return;
   }
 
-  // Gacha daily limit (free-tier throttle)
-  const gacha = getGachaLimitInfo(ip);
-  res.setHeader('X-Gacha-Limit', String(gacha.limit));
-  res.setHeader('X-Gacha-Remaining', String(gacha.remaining));
+  // Premium users bypass gacha daily limit (but not hard rate limit)
+  const premium = await isPremiumRequest(req);
 
-  if (!gacha.allowed) {
-    res.status(429).json({ error: 'Daily generation limit reached. Try again tomorrow.' });
-    return;
+  if (!premium) {
+    // Gacha daily limit (free-tier throttle)
+    const gacha = getGachaLimitInfo(ip);
+    res.setHeader('X-Gacha-Limit', String(gacha.limit));
+    res.setHeader('X-Gacha-Remaining', String(gacha.remaining));
+
+    if (!gacha.allowed) {
+      res.status(429).json({ error: 'Daily generation limit reached. Try again tomorrow.' });
+      return;
+    }
   }
 
   // Validate request body
-  const { system, messages, model, ...rest } = req.body ?? {};
+  const { system, messages, model } = req.body ?? {};
 
   if (!system || !messages || !model) {
     res.status(400).json({
       error: 'Missing required fields: system, messages, model',
     });
+    return;
+  }
+
+  // Model whitelist — prevent abuse via expensive models
+  const ALLOWED_MODELS = ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001'];
+  if (!ALLOWED_MODELS.includes(model)) {
+    res.status(400).json({ error: 'Invalid model specified' });
     return;
   }
 
@@ -134,7 +159,7 @@ export default async function handler(
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify({ system, messages, model, ...rest }),
+        body: JSON.stringify({ system, messages, model, max_tokens: 2048 }),
       },
     );
 
@@ -142,8 +167,7 @@ export default async function handler(
 
     res.status(anthropicResponse.status).json(data);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown error';
-    res.status(502).json({ error: `Upstream API error: ${message}` });
+    console.error('Anthropic API error:', error);
+    res.status(502).json({ error: 'Upstream API error' });
   }
 }

@@ -13,11 +13,9 @@ const TYPE_LABELS: Record<string, string> = {
   soup: '汁物',
 };
 
-// Simple SVG-based OGP image generated inline (no external dependency needed)
 function generateOgImageUrl(title: string, type?: string): string {
-  // Use a static OGP image served from the app's public assets
-  // For now, use the app icon as fallback
-  return `${BASE_URL}/og-image.png`;
+  const params = new URLSearchParams({ recipe: title });
+  return `${BASE_URL}/api/og-image?${params.toString()}`;
 }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {

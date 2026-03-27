@@ -77,25 +77,17 @@ function UpsellModal({
           </View>
 
           <Text style={styles.modalDesc}>
-            開発者にIQOS代をおごると{'\n'}
-            全機能が解放されます☕
+            プレミアムプランは現在準備中です{'\n'}
+            もうしばらくお待ちください
           </Text>
           <View style={styles.modalFeatures}>
-            <Text style={styles.modalFeature}>✅ ガチャ無制限</Text>
-            <Text style={styles.modalFeature}>✅ AI献立生成（NG食材回避）</Text>
-            <Text style={styles.modalFeature}>✅ 広告なし</Text>
-            <Text style={styles.modalFeature}>✅ 献立履歴＆繰り返し防止</Text>
-            <Text style={styles.modalFeature}>✅ 栄養成分表示</Text>
-            <Text style={styles.modalFeature}>✅ 週間献立モード</Text>
+            <Text style={styles.modalFeature}>ガチャ無制限</Text>
+            <Text style={styles.modalFeature}>AI献立生成（NG食材回避）</Text>
+            <Text style={styles.modalFeature}>広告なし</Text>
+            <Text style={styles.modalFeature}>献立履歴＆繰り返し防止</Text>
+            <Text style={styles.modalFeature}>栄養成分表示</Text>
+            <Text style={styles.modalFeature}>週間献立モード</Text>
           </View>
-          <TouchableOpacity
-            style={styles.modalPurchaseBtn}
-            onPress={onPurchase}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.modalPurchaseText}>IQOS代をおごる 🚬</Text>
-            <Text style={styles.modalPurchasePrice}>¥480 / 月</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
             <Text style={styles.modalCloseText}>明日まで待つ</Text>
           </TouchableOpacity>
@@ -282,7 +274,7 @@ export default function HomeScreen() {
                     onPress={() => setShowUpsell(true)}
                   >
                     <Text style={styles.upsellMiniText}>
-                      🚬 IQOS代おごって無制限に →
+                      プレミアムプラン準備中...
                     </Text>
                   </TouchableOpacity>
                 </>

@@ -569,7 +569,8 @@ export default function ResultScreen() {
           <TouchableOpacity
             style={styles.shareXBtn}
             onPress={() => {
-              const text = `今日の献立ガチャ🎰\n🍖 ${result.main.name}\n🥗 ${result.side.name}\n🍜 ${result.soup.name}\n#献立ガチャ #今日のごはん`;
+              const shareUrl = `https://kondate-nu.vercel.app/?recipe=${encodeURIComponent(result.main.name)}&rarity=${result.main.rarity}`;
+              const text = `今日の献立ガチャ🎰\n🍖 ${result.main.name}【${result.main.rarity}】\n🥗 ${result.side.name}\n🍜 ${result.soup.name}\n#献立ガチャ #今日のごはん\n${shareUrl}`;
               const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
               Linking.openURL(url);
             }}

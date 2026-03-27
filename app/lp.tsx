@@ -241,6 +241,9 @@ export default function LandingPage() {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>献立ガチャ</Text>
+        <TouchableOpacity onPress={() => router.push('/legal')}>
+          <Text style={styles.footerLink}>特定商取引法に基づく表記</Text>
+        </TouchableOpacity>
         <Text style={styles.footerCopy}>
           &copy; {new Date().getFullYear()} 献立ガチャ
         </Text>
@@ -505,6 +508,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#C4B5A5',
+  },
+  footerLink: {
+    fontSize: 13,
+    color: '#FF6B35',
+    marginTop: 8,
+    textDecorationLine: 'underline',
   },
   footerCopy: {
     fontSize: 12,
